@@ -1,0 +1,88 @@
+import os
+import shutil
+import subprocess
+from pathlib import Path
+
+# Function to create the necessary directory structure for the mod
+def create_mod_structure(mod_folder):
+    required_folders = ['chr', 'tex', 'motion', 'item']
+
+    # Create the main mod folder
+    if not os.path.exists(mod_folder):
+        os.makedirs(mod_folder)
+    
+    # Create subdirectories inside the mod folder
+    for folder in required_folders:
+        folder_path = os.path.join(mod_folder, folder)
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+    
+    return mod_folder
+
+# Function to move the mod files into their respective folders
+def organize_mod_files(mod_folder, mod_files):
+    for file in mod_files:
+        if file.endswith('.pac'):
+            shutil.move(file, os.path.join(mod_folder, 'chr', os.path.basename(file)))
+        elif file.endswith('.emm') or file.endswith('.tex'):
+            shutil.move(file, os.path.join(mod_folder, 'tex', os.path.basename(file)))
+        elif file.endswith('.anm'):
+            shutil.move(file, os.path.join(mod_folder, 'motion', os.path.basename(file)))
+        elif file.endswith('.sao'):
+            shutil.move(file, os.path.join(mod_folder, 'item', os.path.basename(file)))
+        else:
+            print(f"Warning: File {file} not recognized and skipped.")
+
+# Function to run the CPK tool to create the .cpk file
+def create_cpk(mod_folder, output_cpk):
+    # Assuming you have a CPK Tool or command line tool that can package files
+    # Modify this with the correct command or path to your CPK creation tool.
+    cpk_tool_path = 'path_to_your_cpk_tool'  # Example: 'C:\\CPK_Tool\\cpk.exe'
+    command = [cpk_tool_path, 'create', '-input', mod_folder, '-output', output_cpk]
+    
+    try:
+        subprocess.run(command, check=True)
+        print(f"CPK file created successfully: {output_cpk}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error creating CPK: {e}")
+
+# Main function to automate the process
+def main():
+    # Get the directory of the current script
+    current_dir = Path(__file__).parent
+    print(f"Current directory: {current_dir}")
+
+    # Ask the user to provide the directory containing the mod files
+    input_folder = input("Enter the folder containing the mod files: ").strip()
+    output_folder = input("Enter the folder to save the output CPK file: ").strip()
+
+    # Ensure the input folder exists
+    if not os.path.exists(input_folder):
+        print(f"Error: {input_folder} does not exist!")
+        return
+    
+    # List all files in the input folder
+    mod_files = [os.path.join(input_folder, f) for f in os.listdir(input_folder) if os.path.isfile(os.path.join(input_folder, f))]
+    if not mod_files:
+        print("Error: No mod files found in the specified folder.")
+        return
+
+    # Create the mod structure (will be the root folder for the CPK)
+    mod_folder = os.path.join(current_dir, 'temp_mod_folder')
+    create_mod_structure(mod_folder)
+
+    # Organize the mod files into their respective subfolders
+    organize_mod_files(mod_folder, mod_files)
+
+    # Define the output CPK file path
+    output_cpk = os.path.join(output_folder, 'modded.cpk')
+
+    # Create the CPK file
+    create_cpk(mod_folder, output_cpk)
+
+    # Clean up the temporary folder
+    shutil.rmtree(mod_folder)
+    print("Temporary files cleaned up.")
+
+if __name__ == '__main__':
+    main()
